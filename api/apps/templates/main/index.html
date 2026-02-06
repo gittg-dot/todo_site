@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TODO</title>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: "Inter", sans-serif;
+            background: #f5f5f7;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            padding: 40px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            background: white;
+            padding: 25px 30px;
+            border-radius: 14px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 25px;
+            font-weight: 600;
+        }
+
+
+        .task-form {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .task-form input,
+        .task-form select {
+            padding: 10px 12px;
+            font-size: 15px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            flex: 1;
+        }
+
+        .task-form button {
+            padding: 10px 15px;
+            border: none;
+            background: #2d6cdf;
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .task-form button:hover {
+            background: #1f50a8;
+        }
+
+        .task {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #fafafa;
+            padding: 14px 16px;
+            margin-bottom: 10px;
+            border-radius: 10px;
+            border-left: 6px solid #2d6cdf33;
+        }
+
+        .task.completed {
+            opacity: 0.6;
+            text-decoration: line-through;
+        }
+
+        .priority {
+            font-size: 13px;
+            padding: 4px 8px;
+            border-radius: 6px;
+            color: white;
+        }
+
+        .low {
+            background: #4caf50;
+        }
+
+        .medium {
+            background: #f4a261;
+        }
+
+        .high {
+            background: #e63946;
+        }
+
+        .task button {
+            background: #2d6cdf;
+            color: white;
+            border: none;
+            padding: 6px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h1>To-Do List</h1>
+
+
+        <div class="task-form">
+            <input id="taskInput" placeholder="New task..." />
+
+            <input id="startDateInput" type="date" />
+            <input id="endDateInput" type="date" />
+
+            <select id="priorityInput">
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+            </select>
+
+             <button onclick="createTask()">Add</button>
+        </div>
+
+
+        <div id="taskList"></div>
+    </div>
+
+    <script>
+        const API_URL = "/task/";
+
+        document.addEventListener("DOMContentLoaded", loadTasks);
+
+
+        async function loadTasks() {
+            const res = await fetch(API_URL);
+            const tasks = await res.json();
+            renderTasks(tasks);
+        }
+
+        async function createTask() {
+            const title = document.getElementById("taskInput").value.trim();
+            const priority = document.getElementById("priorityInput").value;
+            const start = document.getElementById("startDateInput").value;
+            const end = document.getElementById("endDateInput").value;
+
+            if (!title) return;
+
+            await fetch("/task/", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    title,
+                    priority,
+                    start,
+                    end
+                })
+            });
+
+            document.getElementById("taskInput").value = "";
+            document.getElementById("startDateInput").value = "";
+            document.getElementById("endDateInput").value = "";
+            loadTasks();
+        }
+
+
+               async function editTask(id) {
+            const title = document.getElementById("taskInputList").value.trim();
+        
+            await fetch(`${API_URL}${id}/`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ title:  title })
+            });
+            loadTasks();
+        }
+
+        async function completeTask(id) {
+            await fetch(`${API_URL}${id}/`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ completed: true })
+            });
+            loadTasks();
+        }
+
+
+        function renderTasks(tasks) {
+            const list = document.getElementById("taskList");
+            list.innerHTML = "";
+
+            tasks.forEach(t => {
+                const div = document.createElement("div");
+                div.className = "task" + (t.completed ? " completed" : "");
+
+                div.innerHTML = `
+            <div>
+                <strong>${t.title}</strong>
+
+                <div style="font-size:13px; color:#666; margin-top:4px;">
+                    <input id="taskInputList" placeholder="${t.start ?? "—"}" />
+                    <div>End: ${t.end ?? "—"}</div>
+                </div>
+
+                <div class="priority ${t.priority}">
+                    ${t.priority.toUpperCase()}
+                </div>
+                <button onclick="editTask('${t.id}')">edit</button>
+            </div>
+
+            ${!t.completed ? `<button onclick="completeTask('${t.id}')">Done</button>` : ""}
+        `;
+
+                list.appendChild(div);
+            });
+        }
+
+    </script>
+
+</body>
+
+</html>
